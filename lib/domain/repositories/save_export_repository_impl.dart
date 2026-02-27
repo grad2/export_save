@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:archive/archive_io.dart';
 import 'package:injectable/injectable.dart';
+import 'package:path/path.dart' as p;
 
 import '../entities/game_file.dart';
 import '../entities/rustfs_settings.dart';
@@ -100,12 +101,38 @@ class SaveExportRepositoryImpl implements SaveExportRepository {
     required File sourceFile,
     required Directory tempDirectory,
   }) async {
-    final sourceName = sourceFile.uri.pathSegments.last;
-    final archivePath = '${tempDirectory.path}/$sourceName.zip';
+
+    final sourcePath = sourceFile.path;
+    final sourceType = await FileSystemEntity.type(sourcePath);
+
+    if (sourceType == FileSystemEntityType.notFound) {
+      throw FileSystemException('Save path was not found', sourcePath);
+    }
+
+    final sourceName = p.basename(sourcePath);
+    final archivePath = p.join(tempDirectory.path, '$sourceName.zip');
 
     final encoder = ZipFileEncoder();
     encoder.create(archivePath);
-    encoder.addFile(sourceFile, sourceName);
+
+    if (sourceType == FileSystemEntityType.file) {
+      encoder.addFile(File(sourcePath), sourceName);
+    } else if (sourceType == FileSystemEntityType.directory) {
+      final sourceDirectory = Directory(sourcePath);
+      final files = await sourceDirectory
+          .list(recursive: true, followLinks: false)
+          .where((entity) => entity is File)
+          .cast<File>()
+          .toList();
+
+      for (final file in files) {
+        final relativePath = p.relative(file.path, from: sourceDirectory.path);
+        final archiveEntryPath = p.join(sourceName, relativePath).replaceAll('\\', '/');
+        encoder.addFile(file, archiveEntryPath);
+      }
+    }
+
+
     encoder.close();
 
     return archivePath;
