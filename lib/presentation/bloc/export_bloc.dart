@@ -18,6 +18,7 @@ class ExportViewModel {
     required this.settings,
     required this.games,
     required this.tempLinks,
+    required this.isSetupCompleted,
     required this.isSaving,
     required this.isLoadingGames,
     required this.isSending,
@@ -33,6 +34,7 @@ class ExportViewModel {
     ),
     games: [],
     tempLinks: [],
+    isSetupCompleted: false,
     isSaving: false,
     isLoadingGames: false,
     isSending: false,
@@ -42,6 +44,7 @@ class ExportViewModel {
   final RustFsSettings settings;
   final List<GameFile> games;
   final List<TempLink> tempLinks;
+  final bool isSetupCompleted;
   final bool isSaving;
   final bool isLoadingGames;
   final bool isSending;
@@ -51,6 +54,7 @@ class ExportViewModel {
     RustFsSettings? settings,
     List<GameFile>? games,
     List<TempLink>? tempLinks,
+    bool? isSetupCompleted,
     bool? isSaving,
     bool? isLoadingGames,
     bool? isSending,
@@ -61,6 +65,7 @@ class ExportViewModel {
       settings: settings ?? this.settings,
       games: games ?? this.games,
       tempLinks: tempLinks ?? this.tempLinks,
+      isSetupCompleted: isSetupCompleted ?? this.isSetupCompleted,
       isSaving: isSaving ?? this.isSaving,
       isLoadingGames: isLoadingGames ?? this.isLoadingGames,
       isSending: isSending ?? this.isSending,
@@ -102,7 +107,13 @@ class ExportBloc {
 
   Future<void> init() async {
     final settings = await _readSettingsUseCase();
-    _emit(value.copyWith(settings: settings, clearMessage: true));
+    _emit(
+      value.copyWith(
+        settings: settings,
+        isSetupCompleted: settings.isValid,
+        clearMessage: true,
+      ),
+    );
     if (settings.dbPath.trim().isNotEmpty) {
       await loadGames(settings.dbPath);
     }
@@ -128,6 +139,7 @@ class ExportBloc {
     _emit(
       value.copyWith(
         settings: settings,
+        isSetupCompleted: true,
         isSaving: false,
         message: 'Параметры сохранены в secure storage',
       ),
