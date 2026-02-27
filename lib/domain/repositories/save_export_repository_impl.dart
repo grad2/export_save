@@ -51,14 +51,13 @@ class SaveExportRepositoryImpl implements SaveExportRepository {
     required RustFsSettings settings,
     required Duration validFor,
   }) async {
-    final file = File(game.path);
     Directory? tempDirectory;
     var fileToUploadPath = game.path;
 
     try {
       tempDirectory = await Directory.systemTemp.createTemp('export_save_');
       fileToUploadPath = await _archiveSave(
-        sourceFile: file,
+        sourcePath: game.path,
         tempDirectory: tempDirectory,
       );
 
@@ -98,40 +97,49 @@ class SaveExportRepositoryImpl implements SaveExportRepository {
   }
 
   Future<String> _archiveSave({
-    required File sourceFile,
+    required String sourcePath,
     required Directory tempDirectory,
   }) async {
+    var resolvedSourcePath = sourcePath;
+    var sourceType = await FileSystemEntity.type(sourcePath);
 
-    final sourcePath = sourceFile.path;
-    final sourceType = await FileSystemEntity.type(sourcePath);
+    if (sourceType == FileSystemEntityType.link) {
+      resolvedSourcePath = await Link(sourcePath).resolveSymbolicLinks();
+      sourceType = await FileSystemEntity.type(resolvedSourcePath);
+    }
 
     if (sourceType == FileSystemEntityType.notFound) {
       throw FileSystemException('Save path was not found', sourcePath);
     }
 
-    final sourceName = p.basename(sourcePath);
+    final sourceName = p.basename(resolvedSourcePath);
     final archivePath = p.join(tempDirectory.path, '$sourceName.zip');
 
     final encoder = ZipFileEncoder();
     encoder.create(archivePath);
 
     if (sourceType == FileSystemEntityType.file) {
-      encoder.addFile(File(sourcePath), sourceName);
+      encoder.addFile(File(resolvedSourcePath), sourceName);
     } else if (sourceType == FileSystemEntityType.directory) {
-      final sourceDirectory = Directory(sourcePath);
+      final sourceDirectory = Directory(resolvedSourcePath);
       final files = await sourceDirectory
-          .list(recursive: true, followLinks: false)
+          .list(recursive: true, followLinks: true)
           .where((entity) => entity is File)
           .cast<File>()
           .toList();
+
+      if (files.isEmpty) {
+        throw FileSystemException('Save directory is empty', resolvedSourcePath);
+      }
 
       for (final file in files) {
         final relativePath = p.relative(file.path, from: sourceDirectory.path);
         final archiveEntryPath = p.join(sourceName, relativePath).replaceAll('\\', '/');
         encoder.addFile(file, archiveEntryPath);
       }
+    } else {
+      throw FileSystemException('Unsupported save path type', resolvedSourcePath);
     }
-
 
     encoder.close();
 
