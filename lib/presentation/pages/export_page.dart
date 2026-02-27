@@ -171,7 +171,7 @@ class _ExportPageState extends State<ExportPage> {
 
               return Padding(
                 padding: const EdgeInsets.all(16),
-                child: state.settings.isValid
+                child: state.isSetupCompleted
                     ? _GamesScreen(
                         state: state,
                         onReload: () => bloc.loadGames(state.settings.dbPath),
