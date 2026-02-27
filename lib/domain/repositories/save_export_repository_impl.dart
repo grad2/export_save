@@ -135,7 +135,7 @@ class SaveExportRepositoryImpl implements SaveExportRepository {
       for (final file in files) {
         final relativePath = p.relative(file.path, from: sourceDirectory.path);
         final archiveEntryPath = p.join(sourceName, relativePath).replaceAll('\\', '/');
-        encoder.addFile(file, archiveEntryPath);
+        await encoder.addFile(file, archiveEntryPath);
       }
     } else {
       throw FileSystemException('Unsupported save path type', resolvedSourcePath);
