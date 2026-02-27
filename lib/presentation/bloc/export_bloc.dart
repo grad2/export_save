@@ -25,7 +25,9 @@ class ExportBloc {
        _saveSettingsUseCase = saveSettingsUseCase,
        _loadGamesUseCase = loadGamesUseCase,
        _sendGameUseCase = sendGameUseCase,
-       _deleteExpiredLinkUseCase = deleteExpiredLinkUseCase;
+       _deleteExpiredLinkUseCase = deleteExpiredLinkUseCase{
+    init();
+  }
 
   final ReadSettingsUseCase _readSettingsUseCase;
   final SaveSettingsUseCase _saveSettingsUseCase;
@@ -33,13 +35,13 @@ class ExportBloc {
   final SendGameUseCase _sendGameUseCase;
   final DeleteExpiredLinkUseCase _deleteExpiredLinkUseCase;
 
-  final BehaviorSubject<ExportState> _state =
-      BehaviorSubject.seeded(ExportState.initial());
+  final BehaviorSubject<ExportState> _state = BehaviorSubject.seeded(ExportState.initial());
 
   Stream<ExportState> get stream => _state.stream;
   ExportState get value => _state.value;
 
   Timer? _cleanupTimer;
+
 
   Future<void> init() async {
     final settings = await _readSettingsUseCase();

@@ -1,8 +1,11 @@
+import 'package:injectable/injectable.dart';
+
 import '../entities/game_file.dart';
 import '../entities/rustfs_settings.dart';
 import '../entities/temp_link.dart';
 import '../repositories/save_export_repository.dart';
 
+@singleton
 class SendGameUseCase {
   const SendGameUseCase(this._repository);
 

@@ -1,6 +1,9 @@
+import 'package:injectable/injectable.dart';
+
 import '../entities/temp_link.dart';
 import '../repositories/save_export_repository.dart';
 
+@singleton
 class DeleteExpiredLinkUseCase {
   const DeleteExpiredLinkUseCase(this._repository);
 

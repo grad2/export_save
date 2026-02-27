@@ -1,6 +1,8 @@
+import 'package:export_save/di/di.dart';
+import 'package:export_save/presentation/bloc/export_bloc.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import 'core/service_locator.dart';
 import 'presentation/pages/export_page.dart';
 
 void main() {
@@ -13,10 +15,17 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Save Export',
-      theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue)),
-      home: ExportPage(bloc: getIt()),
+    return MultiProvider(
+      providers: [
+        Provider(
+          create: (_)=>getIt<ExportBloc>(),
+        ),
+      ],
+      child: MaterialApp(
+        title: 'Save Export',
+        theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue)),
+        home: ExportPage(),
+      ),
     );
   }
 }

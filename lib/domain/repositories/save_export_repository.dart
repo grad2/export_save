@@ -2,6 +2,7 @@ import '../entities/game_file.dart';
 import '../entities/rustfs_settings.dart';
 import '../entities/temp_link.dart';
 
+
 abstract class SaveExportRepository {
   Future<RustFsSettings> readSettings();
   Future<void> saveSettings(RustFsSettings settings);

@@ -1,12 +1,15 @@
-import '../../domain/entities/game_file.dart';
-import '../../domain/entities/rustfs_settings.dart';
-import '../../domain/entities/temp_link.dart';
-import '../../domain/repositories/save_export_repository.dart';
-import '../datasources/game_files_datasource.dart';
-import '../datasources/rustfs_datasource.dart';
-import '../datasources/secure_storage_datasource.dart';
-import '../models/rustfs_connection.dart';
+import 'package:injectable/injectable.dart';
 
+import '../entities/game_file.dart';
+import '../entities/rustfs_settings.dart';
+import '../entities/temp_link.dart';
+import 'save_export_repository.dart';
+import '../../data/datasources/game_files_datasource.dart';
+import '../../data/datasources/rustfs_datasource.dart';
+import '../../data/datasources/secure_storage_datasource.dart';
+import '../../data/models/rustfs_connection.dart';
+
+@Singleton(as: SaveExportRepository)
 class SaveExportRepositoryImpl implements SaveExportRepository {
   const SaveExportRepositoryImpl({
     required SecureStorageDataSource secureStorageDataSource,
