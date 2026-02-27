@@ -22,6 +22,7 @@ dependencies:
   sqflite_common: ^2.5.5
   sqflite_common_ffi: ^2.3.6
   qr_flutter: ^4.1.0
+  archive: ^4.0.7
 
 dev_dependencies:
   flutter_test:

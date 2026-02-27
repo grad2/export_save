@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:archive/archive_io.dart';
 import 'package:injectable/injectable.dart';
 
 import '../entities/game_file.dart';
@@ -50,34 +51,64 @@ class SaveExportRepositoryImpl implements SaveExportRepository {
     required Duration validFor,
   }) async {
     final file = File(game.path);
-    final fileSize = await file.length();
+    Directory? tempDirectory;
+    var fileToUploadPath = game.path;
 
-    if (fileSize > _maxUploadSizeBytes) {
-      throw FileSizeLimitExceededException(
-        maxBytes: _maxUploadSizeBytes,
-        actualBytes: fileSize,
+    try {
+      tempDirectory = await Directory.systemTemp.createTemp('export_save_');
+      fileToUploadPath = await _archiveSave(
+        sourceFile: file,
+        tempDirectory: tempDirectory,
       );
-    }
 
-    final connection = RustFsConnection.fromUrl(
-      rustfsUrl: settings.rustfsUrl,
-      accessKey: settings.accessKey,
-      secretKey: settings.secretKey,
-    );
+      final fileSize = await File(fileToUploadPath).length();
 
-    final (link, objectName, expiresAt) = await _rustFsDataSource
-        .uploadAndGetTempLink(
-          connection: connection,
-          filePath: game.path,
-          validFor: validFor,
+      if (fileSize > _maxUploadSizeBytes) {
+        throw FileSizeLimitExceededException(
+          maxBytes: _maxUploadSizeBytes,
+          actualBytes: fileSize,
         );
+      }
 
-    return TempLink(
-      link: link,
-      objectName: objectName,
-      expiresAt: expiresAt,
-      settings: settings,
-    );
+      final connection = RustFsConnection.fromUrl(
+        rustfsUrl: settings.rustfsUrl,
+        accessKey: settings.accessKey,
+        secretKey: settings.secretKey,
+      );
+
+      final (link, objectName, expiresAt) = await _rustFsDataSource
+          .uploadAndGetTempLink(
+            connection: connection,
+            filePath: fileToUploadPath,
+            validFor: validFor,
+          );
+
+      return TempLink(
+        link: link,
+        objectName: objectName,
+        expiresAt: expiresAt,
+        settings: settings,
+      );
+    } finally {
+      if (tempDirectory != null && await tempDirectory.exists()) {
+        await tempDirectory.delete(recursive: true);
+      }
+    }
+  }
+
+  Future<String> _archiveSave({
+    required File sourceFile,
+    required Directory tempDirectory,
+  }) async {
+    final sourceName = sourceFile.uri.pathSegments.last;
+    final archivePath = '${tempDirectory.path}/$sourceName.zip';
+
+    final encoder = ZipFileEncoder();
+    encoder.create(archivePath);
+    encoder.addFile(sourceFile, sourceName);
+    encoder.close();
+
+    return archivePath;
   }
 
   @override
