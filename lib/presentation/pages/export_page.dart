@@ -133,7 +133,7 @@ class _ExportPageState extends State<ExportPage> {
       builder: (context, bloc, _) {
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Выгрузка сейвов в RustFS'),
+            title: const Text('Выгрузка сейвов'),
             actions: [
               StreamBuilder<ExportViewModel>(
                 stream: bloc.stream,
@@ -245,7 +245,7 @@ class _SetupScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Экран 1/2: заполните параметры подключения',
+            'Заполните параметры подключения',
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 12),
@@ -306,20 +306,6 @@ class _GamesScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Экран 2/2: выберите игру для отправки',
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: state.isLoadingGames ? null : onReload,
-            icon: const Icon(Icons.refresh),
-            label: Text(state.isLoadingGames ? 'Чтение...' : 'Загрузить игры из DB'),
-          ),
-        ),
-        const SizedBox(height: 12),
         Expanded(
           child: state.games.isEmpty
               ? const Center(

@@ -164,14 +164,14 @@ class ExportBloc {
         value.copyWith(
           tempLinks: links,
           isSending: false,
-          message: 'Файл отправлен в RustFS, ссылка на 1 час',
+          message: 'Файл отправлен, файл живёт 1 час',
         ),
       );
     } catch (_) {
       _emit(
         value.copyWith(
           isSending: false,
-          message: 'Ошибка отправки в RustFS через MinIO',
+          message: 'Ошибка отправки',
         ),
       );
     }

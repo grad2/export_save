@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:export_save/domain/entities/game_file.dart';
 import 'package:injectable/injectable.dart';
 import 'package:path/path.dart' as p;
-import 'package:sqflite_common/sqlite_api.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'game_files_datasource.dart';
@@ -136,7 +135,7 @@ class GameFilesDataSourceImpl extends GameFilesDataSource {
         games.add(
           GameFile(
             name: name.isEmpty ? '-' : name,
-            path: resolvedPath,
+            path: resolvedPath.substring(1),
           ),
         );
       }
