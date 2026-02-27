@@ -306,6 +306,11 @@ class _GamesScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Text(
+          'Перед выгрузкой, загрузите сейвы с платформы на компютер мерчанта!!!',
+          style: Theme.of(context).textTheme.titleMedium,
+          textAlign: TextAlign.center,
+        ),
         Expanded(
           child: state.games.isEmpty
               ? const Center(
