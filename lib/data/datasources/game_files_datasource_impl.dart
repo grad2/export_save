@@ -3,14 +3,21 @@ import 'dart:io';
 import 'package:export_save/domain/entities/game_file.dart';
 import 'package:injectable/injectable.dart';
 import 'package:path/path.dart' as p;
+import 'package:sqflite_common/sqlite_api.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'game_files_datasource.dart';
 
 @Singleton(as: GameFilesDataSource)
 class GameFilesDataSourceImpl extends GameFilesDataSource {
+  GameFilesDataSourceImpl() {
+    sqfliteFfiInit();
+  }
+
   static const _userGameQuery = 'SELECT NAME, SAVES_PATH FROM GAMES;';
   static const _gameMapperQuery =
       'SELECT SAVES_PATH FROM STEAM_SAVES_MAPPINGS;';
+  static final DatabaseFactory _databaseFactory = databaseFactoryFfi;
 
   @override
   Future<List<GameFile>> loadGames(String dbPath) async {
@@ -107,40 +114,37 @@ class GameFilesDataSourceImpl extends GameFilesDataSource {
     required String sourceName,
     required List<GameFile> games,
   }) async {
-    final result = await Process.run('sqlite3', [dbPath, '-separator', '|', query]);
-    if (result.exitCode != 0) {
-      return;
-    }
-
-    final output = (result.stdout ?? '').toString();
-    if (output.trim().isEmpty) {
-      return;
-    }
-
-    for (final line in output.split('\n')) {
-      final trimmedLine = line.trim();
-      if (trimmedLine.isEmpty) {
-        continue;
-      }
-
-      final split = trimmedLine.split('|');
-      final name = split.length >= 2 ? split.first.trim() : '';
-      final rawPath = split.length >= 2 ? split[1].trim() : split.first.trim();
-      if (rawPath.isEmpty) {
-        continue;
-      }
-
-      final expandedPath = _expandEnvironmentVariables(rawPath);
-      final resolvedPath = p.isAbsolute(expandedPath)
-          ? expandedPath
-          : p.normalize(p.join(Directory.current.path, expandedPath));
-
-      games.add(
-        GameFile(
-          name: name.isEmpty ? '$sourceName: Unknown' : name,
-          path: resolvedPath,
-        ),
+    Database? database;
+    try {
+      database = await _databaseFactory.openDatabase(
+        dbPath,
+        options: OpenDatabaseOptions(readOnly: true),
       );
+      final rows = await database.rawQuery(query);
+
+      for (final row in rows) {
+        final name = (row['NAME'] ?? '').toString().trim();
+        final rawPath = (row['SAVES_PATH'] ?? '').toString().trim();
+        if (rawPath.isEmpty) {
+          continue;
+        }
+
+        final expandedPath = _expandEnvironmentVariables(rawPath);
+        final resolvedPath = p.isAbsolute(expandedPath)
+            ? expandedPath
+            : p.normalize(p.join(Directory.current.path, expandedPath));
+
+        games.add(
+          GameFile(
+            name: name.isEmpty ? '$sourceName: Unknown' : name,
+            path: resolvedPath,
+          ),
+        );
+      }
+    } on DatabaseException {
+      return;
+    } finally {
+      await database?.close();
     }
   }
 
