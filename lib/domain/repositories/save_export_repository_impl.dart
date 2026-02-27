@@ -1,6 +1,8 @@
 import 'dart:io';
 
+import 'package:archive/archive_io.dart';
 import 'package:injectable/injectable.dart';
+import 'package:path/path.dart' as p;
 
 import '../entities/game_file.dart';
 import '../entities/rustfs_settings.dart';
@@ -50,34 +52,88 @@ class SaveExportRepositoryImpl implements SaveExportRepository {
     required Duration validFor,
   }) async {
     final file = File(game.path);
-    final fileSize = await file.length();
+    Directory? tempDirectory;
+    var fileToUploadPath = game.path;
 
-    if (fileSize > _maxUploadSizeBytes) {
-      throw FileSizeLimitExceededException(
-        maxBytes: _maxUploadSizeBytes,
-        actualBytes: fileSize,
+    try {
+      tempDirectory = await Directory.systemTemp.createTemp('export_save_');
+      fileToUploadPath = await _archiveSave(
+        sourceFile: file,
+        tempDirectory: tempDirectory,
       );
+
+      final fileSize = await File(fileToUploadPath).length();
+
+      if (fileSize > _maxUploadSizeBytes) {
+        throw FileSizeLimitExceededException(
+          maxBytes: _maxUploadSizeBytes,
+          actualBytes: fileSize,
+        );
+      }
+
+      final connection = RustFsConnection.fromUrl(
+        rustfsUrl: settings.rustfsUrl,
+        accessKey: settings.accessKey,
+        secretKey: settings.secretKey,
+      );
+
+      final (link, objectName, expiresAt) = await _rustFsDataSource
+          .uploadAndGetTempLink(
+            connection: connection,
+            filePath: fileToUploadPath,
+            validFor: validFor,
+          );
+
+      return TempLink(
+        link: link,
+        objectName: objectName,
+        expiresAt: expiresAt,
+        settings: settings,
+      );
+    } finally {
+      if (tempDirectory != null && await tempDirectory.exists()) {
+        await tempDirectory.delete(recursive: true);
+      }
+    }
+  }
+
+  Future<String> _archiveSave({
+    required File sourceFile,
+    required Directory tempDirectory,
+  }) async {
+    final sourcePath = sourceFile.path;
+    final sourceType = await FileSystemEntity.type(sourcePath);
+
+    if (sourceType == FileSystemEntityType.notFound) {
+      throw FileSystemException('Save path was not found', sourcePath);
     }
 
-    final connection = RustFsConnection.fromUrl(
-      rustfsUrl: settings.rustfsUrl,
-      accessKey: settings.accessKey,
-      secretKey: settings.secretKey,
-    );
+    final sourceName = p.basename(sourcePath);
+    final archivePath = p.join(tempDirectory.path, '$sourceName.zip');
 
-    final (link, objectName, expiresAt) = await _rustFsDataSource
-        .uploadAndGetTempLink(
-          connection: connection,
-          filePath: game.path,
-          validFor: validFor,
-        );
+    final encoder = ZipFileEncoder();
+    encoder.create(archivePath);
 
-    return TempLink(
-      link: link,
-      objectName: objectName,
-      expiresAt: expiresAt,
-      settings: settings,
-    );
+    if (sourceType == FileSystemEntityType.file) {
+      encoder.addFile(File(sourcePath), sourceName);
+    } else if (sourceType == FileSystemEntityType.directory) {
+      final sourceDirectory = Directory(sourcePath);
+      final files = await sourceDirectory
+          .list(recursive: true, followLinks: false)
+          .where((entity) => entity is File)
+          .cast<File>()
+          .toList();
+
+      for (final file in files) {
+        final relativePath = p.relative(file.path, from: sourceDirectory.path);
+        final archiveEntryPath = p.join(sourceName, relativePath).replaceAll('\\', '/');
+        encoder.addFile(file, archiveEntryPath);
+      }
+    }
+
+    encoder.close();
+
+    return archivePath;
   }
 
   @override
