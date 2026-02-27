@@ -11,7 +11,62 @@ import '../../domain/usecases/load_games_usecase.dart';
 import '../../domain/usecases/read_settings_usecase.dart';
 import '../../domain/usecases/save_settings_usecase.dart';
 import '../../domain/usecases/send_game_usecase.dart';
-import 'export_state.dart';
+
+class ExportViewModel {
+  const ExportViewModel({
+    required this.settings,
+    required this.games,
+    required this.tempLinks,
+    required this.isSaving,
+    required this.isLoadingGames,
+    required this.isSending,
+    required this.message,
+  });
+
+  factory ExportViewModel.initial() => const ExportViewModel(
+    settings: RustFsSettings(
+      accessKey: '',
+      secretKey: '',
+      dbPath: '',
+      rustfsUrl: '',
+    ),
+    games: [],
+    tempLinks: [],
+    isSaving: false,
+    isLoadingGames: false,
+    isSending: false,
+    message: null,
+  );
+
+  final RustFsSettings settings;
+  final List<GameFile> games;
+  final List<TempLink> tempLinks;
+  final bool isSaving;
+  final bool isLoadingGames;
+  final bool isSending;
+  final String? message;
+
+  ExportViewModel copyWith({
+    RustFsSettings? settings,
+    List<GameFile>? games,
+    List<TempLink>? tempLinks,
+    bool? isSaving,
+    bool? isLoadingGames,
+    bool? isSending,
+    String? message,
+    bool clearMessage = false,
+  }) {
+    return ExportViewModel(
+      settings: settings ?? this.settings,
+      games: games ?? this.games,
+      tempLinks: tempLinks ?? this.tempLinks,
+      isSaving: isSaving ?? this.isSaving,
+      isLoadingGames: isLoadingGames ?? this.isLoadingGames,
+      isSending: isSending ?? this.isSending,
+      message: clearMessage ? null : (message ?? this.message),
+    );
+  }
+}
 
 @injectable
 class ExportBloc {
@@ -25,7 +80,7 @@ class ExportBloc {
        _saveSettingsUseCase = saveSettingsUseCase,
        _loadGamesUseCase = loadGamesUseCase,
        _sendGameUseCase = sendGameUseCase,
-       _deleteExpiredLinkUseCase = deleteExpiredLinkUseCase{
+       _deleteExpiredLinkUseCase = deleteExpiredLinkUseCase {
     init();
   }
 
@@ -35,13 +90,14 @@ class ExportBloc {
   final SendGameUseCase _sendGameUseCase;
   final DeleteExpiredLinkUseCase _deleteExpiredLinkUseCase;
 
-  final BehaviorSubject<ExportState> _state = BehaviorSubject.seeded(ExportState.initial());
+  final BehaviorSubject<ExportViewModel> _state = BehaviorSubject.seeded(
+    ExportViewModel.initial(),
+  );
 
-  Stream<ExportState> get stream => _state.stream;
-  ExportState get value => _state.value;
+  Stream<ExportViewModel> get stream => _state.stream;
+  ExportViewModel get value => _state.value;
 
   Timer? _cleanupTimer;
-
 
   Future<void> init() async {
     final settings = await _readSettingsUseCase();
@@ -144,7 +200,7 @@ class ExportBloc {
     }
   }
 
-  void _emit(ExportState state) {
+  void _emit(ExportViewModel state) {
     if (!_state.isClosed) {
       _state.add(state);
     }

@@ -1,27 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../domain/entities/game_file.dart';
 import '../../domain/entities/rustfs_settings.dart';
 import '../bloc/export_bloc.dart';
-import '../bloc/export_state.dart';
-
 
 class ExportPage extends StatelessWidget {
-  final _formKey = GlobalKey<FormState>();
-  final _accessController = TextEditingController();
-  final _secretController = TextEditingController();
-  final _dbPathController = TextEditingController();
-  final _rustfsUrlController = TextEditingController();
-
   ExportPage({super.key});
 
-  @override
-  void dispose() {
-    _accessController.dispose();
-    _secretController.dispose();
-    _dbPathController.dispose();
-    _rustfsUrlController.dispose();
-    super.dispose();
-  }
+  final _formKey = GlobalKey<FormState>();
 
   String? _required(String? value) {
     if (value == null || value.trim().isEmpty) {
@@ -30,52 +17,48 @@ class ExportPage extends StatelessWidget {
     return null;
   }
 
-  RustFsSettings _settingsFromFields() {
-    return RustFsSettings(
-      accessKey: _accessController.text,
-      secretKey: _secretController.text,
-      dbPath: _dbPathController.text,
-      rustfsUrl: _rustfsUrlController.text,
+  RustFsSettings _updateSettings(
+    ExportBloc bloc,
+    ExportViewModel state, {
+    String? accessKey,
+    String? secretKey,
+    String? dbPath,
+    String? rustfsUrl,
+  }) {
+    final updated = RustFsSettings(
+      accessKey: accessKey ?? state.settings.accessKey,
+      secretKey: secretKey ?? state.settings.secretKey,
+      dbPath: dbPath ?? state.settings.dbPath,
+      rustfsUrl: rustfsUrl ?? state.settings.rustfsUrl,
     );
+    bloc.updateSettings(updated);
+    return updated;
   }
 
-  void _syncControllers(ExportState state) {
-    if (_accessController.text.isEmpty && state.settings.accessKey.isNotEmpty) {
-      _accessController.text = state.settings.accessKey;
-    }
-    if (_secretController.text.isEmpty && state.settings.secretKey.isNotEmpty) {
-      _secretController.text = state.settings.secretKey;
-    }
-    if (_dbPathController.text.isEmpty && state.settings.dbPath.isNotEmpty) {
-      _dbPathController.text = state.settings.dbPath;
-    }
-    if (_rustfsUrlController.text.isEmpty && state.settings.rustfsUrl.isNotEmpty) {
-      _rustfsUrlController.text = state.settings.rustfsUrl;
-    }
+  void _sendGame(ExportBloc bloc, GameFile game) {
+    bloc.sendGame(game);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer(
-      builder: (context) {
+    return Consumer<ExportBloc>(
+      builder: (context, bloc, _) {
         return Scaffold(
           appBar: AppBar(title: const Text('Выгрузка сейвов в RustFS')),
-          body: StreamBuilder<ExportState>(
-            stream: widget.bloc.stream,
-            initialData: widget.bloc.value,
+          body: StreamBuilder<ExportViewModel>(
+            stream: bloc.stream,
+            initialData: bloc.value,
             builder: (context, snapshot) {
-              final state = snapshot.data ?? ExportState.initial();
-              _syncControllers(state);
+              final state = snapshot.data ?? ExportViewModel.initial();
 
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (!mounted || state.message == null) {
-                  return;
-                }
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(state.message!)),
-                );
-                widget.bloc.consumeMessage();
-              });
+              if (state.message != null) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(state.message!)),
+                  );
+                  bloc.consumeMessage();
+                });
+              }
 
               return Padding(
                 padding: const EdgeInsets.all(16),
@@ -86,34 +69,54 @@ class ExportPage extends StatelessWidget {
                       child: Column(
                         children: [
                           TextFormField(
-                            controller: _accessController,
+                            initialValue: state.settings.accessKey,
                             decoration: const InputDecoration(
                               labelText: 'RustFS Access Key',
                             ),
                             validator: _required,
+                            onChanged: (value) => _updateSettings(
+                              bloc,
+                              state,
+                              accessKey: value,
+                            ),
                           ),
                           TextFormField(
-                            controller: _secretController,
+                            initialValue: state.settings.secretKey,
                             decoration: const InputDecoration(
                               labelText: 'RustFS Secret Key',
                             ),
                             obscureText: true,
                             validator: _required,
+                            onChanged: (value) => _updateSettings(
+                              bloc,
+                              state,
+                              secretKey: value,
+                            ),
                           ),
                           TextFormField(
-                            controller: _rustfsUrlController,
+                            initialValue: state.settings.rustfsUrl,
                             decoration: const InputDecoration(
                               labelText:
                                   'Ссылка на RustFS (например https://host:9000/bucket)',
                             ),
                             validator: _required,
+                            onChanged: (value) => _updateSettings(
+                              bloc,
+                              state,
+                              rustfsUrl: value,
+                            ),
                           ),
                           TextFormField(
-                            controller: _dbPathController,
+                            initialValue: state.settings.dbPath,
                             decoration: const InputDecoration(
                               labelText: 'Путь к DB файлам',
                             ),
                             validator: _required,
+                            onChanged: (value) => _updateSettings(
+                              bloc,
+                              state,
+                              dbPath: value,
+                            ),
                           ),
                           const SizedBox(height: 12),
                           Row(
@@ -124,9 +127,7 @@ class ExportPage extends StatelessWidget {
                                       ? null
                                       : () {
                                           if (_formKey.currentState!.validate()) {
-                                            final settings = _settingsFromFields();
-                                            widget.bloc.updateSettings(settings);
-                                            widget.bloc.saveSettings(settings);
+                                            bloc.saveSettings(state.settings);
                                           }
                                         },
                                   child: Text(
@@ -143,9 +144,7 @@ class ExportPage extends StatelessWidget {
                                       ? null
                                       : () {
                                           if (_formKey.currentState!.validate()) {
-                                            final settings = _settingsFromFields();
-                                            widget.bloc.updateSettings(settings);
-                                            widget.bloc.loadGames(settings.dbPath);
+                                            bloc.loadGames(state.settings.dbPath);
                                           }
                                         },
                                   child: Text(
@@ -181,10 +180,7 @@ class ExportPage extends StatelessWidget {
                                           ? null
                                           : () {
                                               if (_formKey.currentState!.validate()) {
-                                                widget.bloc.updateSettings(
-                                                  _settingsFromFields(),
-                                                );
-                                                widget.bloc.sendGame(game);
+                                                _sendGame(bloc, game);
                                               }
                                             },
                                       child: const Text('Отправить'),
@@ -226,7 +222,7 @@ class ExportPage extends StatelessWidget {
             },
           ),
         );
-      }
+      },
     );
   }
 }
