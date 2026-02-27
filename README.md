@@ -1,16 +1,27 @@
-# export_save
+# Export Save
 
-A new Flutter project.
+`export_save` — приложение для отправки игровых сохранений в RustFS и получения временной ссылки для передачи файла.
 
-## Getting Started
+## Что нужно для работы
 
-This project is a starting point for a Flutter application.
+Перед использованием обязательно разверните **RustFS**:
 
-A few resources to get you started if this is your first Flutter project:
+- на своём **NAS-сервере** (рекомендуемый вариант),
+- или на любом другом сервере/хостинге с доступом по HTTP(S).
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Без работающего RustFS загрузка файлов и генерация ссылок в приложении недоступны.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Первичная настройка
+
+1. Откройте приложение.
+2. Перейдите в настройки подключения.
+3. Укажите адрес вашего RustFS-сервера.
+4. Введите ключ/токен доступа (если требуется вашей конфигурацией RustFS).
+5. Сохраните настройки.
+
+## Как пользоваться
+
+1. Выберите игру/сохранение в приложении.
+2. Нажмите на игру
+3. Дождитесь завершения загрузки.
+4. Скопируйте или отправьте полученную временную ссылку.
