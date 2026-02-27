@@ -14,9 +14,8 @@ class GameFilesDataSourceImpl extends GameFilesDataSource {
     sqfliteFfiInit();
   }
 
-  static const _userGameQuery = 'SELECT NAME, SAVES_PATH FROM GAMES;';
-  static const _gameMapperQuery =
-      'SELECT SAVES_PATH FROM STEAM_SAVES_MAPPINGS;';
+  static const _userGameQuery = 'SELECT * FROM GAMES;';
+  static const _gameMapperQuery = 'SELECT * FROM STEAM_SAVES_MAPPINGS;';
   static final DatabaseFactory _databaseFactory = databaseFactoryFfi;
 
   @override
@@ -123,9 +122,9 @@ class GameFilesDataSourceImpl extends GameFilesDataSource {
       final rows = await database.rawQuery(query);
 
       for (final row in rows) {
-        final name = (row['NAME'] ?? '').toString().trim();
+        final name = (row['STEAM_ID'] ?? row['NAME'] ?? '').toString().trim();
         final rawPath = (row['SAVES_PATH'] ?? '').toString().trim();
-        if (rawPath.isEmpty) {
+        if (rawPath.isEmpty || row['ENABLED'] == 0) {
           continue;
         }
 
@@ -136,7 +135,7 @@ class GameFilesDataSourceImpl extends GameFilesDataSource {
 
         games.add(
           GameFile(
-            name: name.isEmpty ? '$sourceName: Unknown' : name,
+            name: name.isEmpty ? '-' : name,
             path: resolvedPath,
           ),
         );

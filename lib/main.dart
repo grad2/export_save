@@ -5,7 +5,9 @@ import 'package:provider/provider.dart';
 
 import 'presentation/pages/export_page.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
   configureDependencies();
   runApp(const MyApp());
 }
@@ -18,12 +20,16 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         Provider(
-          create: (_)=>getIt<ExportBloc>(),
+          create: (_) => getIt<ExportBloc>(),
         ),
       ],
       child: MaterialApp(
         title: 'Save Export',
         theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue)),
+        debugShowCheckedModeBanner: false,
+        builder: (context, child) {
+          return child ?? SizedBox();
+        },
         home: ExportPage(),
       ),
     );

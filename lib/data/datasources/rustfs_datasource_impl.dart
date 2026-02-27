@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:export_save/data/datasources/rustfs_datasource.dart';
 import 'package:injectable/injectable.dart';
+import 'package:minio/io.dart';
 import 'package:minio/minio.dart';
 
 import '../models/rustfs_connection.dart';
@@ -28,17 +29,15 @@ class RustFsDataSourceImpl extends RustFsDataSource{
       port: connection.port,
     );
 
-
-    await minio.putObject(connection.bucket, objectName, Stream.value(file.readAsBytesSync()));
+    await minio.fPutObject(connection.bucket, objectName, file.path);
 
     final expiresAt = DateTime.now().add(validFor);
     final link = await minio.presignedGetObject(
       connection.bucket,
       objectName,
-      expires: validFor.inSeconds,
     );
 
-    return (link, objectName, expiresAt);
+    return (Uri.parse(link).replace(queryParameters: {}).toString().split("").reversed.skip(1).toList().reversed.join(''), objectName, expiresAt);
   }
 
   @override

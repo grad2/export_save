@@ -171,19 +171,38 @@ class ExportPage extends StatelessWidget {
                               itemCount: state.games.length,
                               itemBuilder: (context, index) {
                                 final game = state.games[index];
-                                return Card(
-                                  child: ListTile(
-                                    title: Text(game.name),
-                                    subtitle: Text(game.path),
-                                    trailing: TextButton(
-                                      onPressed: state.isSending
-                                          ? null
-                                          : () {
-                                              if (_formKey.currentState!.validate()) {
-                                                _sendGame(bloc, game);
-                                              }
-                                            },
-                                      child: const Text('Отправить'),
+                                return InkWell(
+                                  onTap: state.isSending
+                                      ? null
+                                      : () {
+                                    if (_formKey.currentState!.validate()) {
+                                      _sendGame(bloc, game);
+                                    }
+                                  },
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.white30,
+                                      border: Border(bottom: BorderSide(color: Colors.black26))
+                                    ),
+                                    padding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                                    child: Row(
+                                      spacing: 6,
+                                      children: [
+                                        Text(game.name),
+                                        Flexible(
+                                          child: Text(
+                                            game.path,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              fontStyle: FontStyle.normal,
+                                              fontWeight: FontWeight.w400,
+                                              fontSize: 14,
+                                              height: 16 / 14 ,
+                                              color: Colors.black38,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 );
@@ -201,15 +220,22 @@ class ExportPage extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       SizedBox(
-                        height: 120,
+                        height: 200,
                         child: ListView(
                           children: state.tempLinks.map((entry) {
                             final minutesLeft =
                                 entry.expiresAt.difference(DateTime.now()).inMinutes;
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 8),
-                              child: Text(
-                                '${entry.link} (осталось ~${minutesLeft} мин)',
+                              child: Column(
+                                children: [
+                                  Text(
+                                    '${entry.link}',
+                                  ),
+                                  Text(
+                                    '(осталось ~${minutesLeft} мин)',
+                                  ),
+                                ],
                               ),
                             );
                           }).toList(),

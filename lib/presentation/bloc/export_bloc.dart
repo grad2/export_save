@@ -68,7 +68,7 @@ class ExportViewModel {
   }
 }
 
-@injectable
+@singleton
 class ExportBloc {
   ExportBloc({
     required ReadSettingsUseCase readSettingsUseCase,
