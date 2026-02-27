@@ -6,6 +6,7 @@ import 'package:rxdart/rxdart.dart';
 import '../../domain/entities/game_file.dart';
 import '../../domain/entities/rustfs_settings.dart';
 import '../../domain/entities/temp_link.dart';
+import '../../domain/exceptions/file_size_limit_exceeded_exception.dart';
 import '../../domain/usecases/delete_expired_link_usecase.dart';
 import '../../domain/usecases/load_games_usecase.dart';
 import '../../domain/usecases/read_settings_usecase.dart';
@@ -167,7 +168,17 @@ class ExportBloc {
           message: 'Файл отправлен, файл живёт 1 час',
         ),
       );
-    } catch (_) {
+    } catch (error) {
+      if (error is FileSizeLimitExceededException) {
+        _emit(
+          value.copyWith(
+            isSending: false,
+            message: 'Файл больше 3 ГБ. Отправка недоступна',
+          ),
+        );
+        return;
+      }
+
       _emit(
         value.copyWith(
           isSending: false,

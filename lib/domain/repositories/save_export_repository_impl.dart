@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:injectable/injectable.dart';
 
 import '../entities/game_file.dart';
 import '../entities/rustfs_settings.dart';
+import '../exceptions/file_size_limit_exceeded_exception.dart';
 import '../entities/temp_link.dart';
 import 'save_export_repository.dart';
 import '../../data/datasources/game_files_datasource.dart';
@@ -38,12 +41,24 @@ class SaveExportRepositoryImpl implements SaveExportRepository {
     return _secureStorageDataSource.saveSettings(settings);
   }
 
+  static const int _maxUploadSizeBytes = 3 * 1024 * 1024 * 1024;
+
   @override
   Future<TempLink> sendGame({
     required GameFile game,
     required RustFsSettings settings,
     required Duration validFor,
   }) async {
+    final file = File(game.path);
+    final fileSize = await file.length();
+
+    if (fileSize > _maxUploadSizeBytes) {
+      throw FileSizeLimitExceededException(
+        maxBytes: _maxUploadSizeBytes,
+        actualBytes: fileSize,
+      );
+    }
+
     final connection = RustFsConnection.fromUrl(
       rustfsUrl: settings.rustfsUrl,
       accessKey: settings.accessKey,
