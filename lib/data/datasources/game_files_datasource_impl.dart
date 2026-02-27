@@ -135,7 +135,7 @@ class GameFilesDataSourceImpl extends GameFilesDataSource {
         games.add(
           GameFile(
             name: name.isEmpty ? '-' : name,
-            path: resolvedPath.substring(1),
+            path: resolvedPath,
           ),
         );
       }
