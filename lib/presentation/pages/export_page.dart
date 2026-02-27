@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../domain/entities/game_file.dart';
 import '../../domain/entities/rustfs_settings.dart';
@@ -232,6 +233,13 @@ class ExportPage extends StatelessWidget {
                                   Text(
                                     '${entry.link}',
                                   ),
+                                  const SizedBox(height: 8),
+                                  QrImageView(
+                                    data: entry.link,
+                                    version: QrVersions.auto,
+                                    size: 120,
+                                  ),
+                                  const SizedBox(height: 4),
                                   Text(
                                     '(осталось ~${minutesLeft} мин)',
                                   ),
