@@ -306,10 +306,12 @@ class _GamesScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Перед выгрузкой, загрузите сейвы с платформы на компютер мерчанта!!!',
-          style: Theme.of(context).textTheme.titleMedium,
-          textAlign: TextAlign.center,
+        Center(
+          child: Text(
+            'Перед выгрузкой, загрузите сейвы с платформы на компютер мерчанта!!!',
+            style: Theme.of(context).textTheme.titleMedium,
+            textAlign: TextAlign.center,
+          ),
         ),
         Expanded(
           child: state.games.isEmpty
@@ -317,6 +319,7 @@ class _GamesScreen extends StatelessWidget {
                   child: Text('Список игр пуст. Проверьте путь к DB и обновите список.'),
                 )
               : ListView.builder(
+                  padding: EdgeInsets.zero,
                   itemCount: state.games.length,
                   itemBuilder: (context, index) {
                     final game = state.games[index];

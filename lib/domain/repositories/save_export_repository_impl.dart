@@ -101,6 +101,7 @@ class SaveExportRepositoryImpl implements SaveExportRepository {
     required File sourceFile,
     required Directory tempDirectory,
   }) async {
+
     final sourcePath = sourceFile.path;
     final sourceType = await FileSystemEntity.type(sourcePath);
 
@@ -130,6 +131,7 @@ class SaveExportRepositoryImpl implements SaveExportRepository {
         encoder.addFile(file, archiveEntryPath);
       }
     }
+
 
     encoder.close();
 
